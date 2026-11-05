@@ -1,0 +1,70 @@
+{
+  "tests": [
+    {
+      "file": "greetings/greet.spec.ts",
+      "title": "a name that is too long is refused",
+      "project": "api",
+      "tags": [
+        "@TPL-FEAT-1",
+        "@TPL-FEAT-1/AC-2",
+        "@cap-greetings",
+        "@comp-template-service"
+      ],
+      "capability": "greetings",
+      "covers": [
+        "template-service GET /api/v1/greetings 400"
+      ]
+    },
+    {
+      "file": "greetings/greet.spec.ts",
+      "title": "a person gets a greeting",
+      "project": "api",
+      "tags": [
+        "@TPL-FEAT-1",
+        "@TPL-FEAT-1/AC-1",
+        "@cap-greetings",
+        "@comp-template-service",
+        "@critical"
+      ],
+      "capability": "greetings",
+      "covers": [
+        "template-service GET /api/v1/greetings 200"
+      ]
+    },
+    {
+      "file": "greetings/greet.ui.spec.ts",
+      "title": "a person greets themselves from the web app",
+      "project": "ui",
+      "tags": [
+        "@TPL-FEAT-1",
+        "@TPL-FEAT-1/AC-1",
+        "@cap-greetings",
+        "@comp-template-service",
+        "@comp-template-web",
+        "@critical"
+      ],
+      "capability": "greetings",
+      "covers": [
+        "page template-web /",
+        "template-service GET /api/v1/greetings 200"
+      ]
+    },
+    {
+      "file": "greetings/save.spec.ts",
+      "title": "a saved greeting is published once, even when the request is retried",
+      "project": "api",
+      "tags": [
+        "@TPL-FEAT-2",
+        "@TPL-FEAT-2/AC-1",
+        "@TPL-FEAT-2/AC-2",
+        "@cap-greetings",
+        "@comp-template-service"
+      ],
+      "capability": "greetings",
+      "covers": [
+        "template-service PUT /api/v1/greetings/{id} 202",
+        "event vrixel.greeting.saved.v1"
+      ]
+    }
+  ]
+}
