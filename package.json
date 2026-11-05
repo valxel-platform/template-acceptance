@@ -1,0 +1,36 @@
+{
+  "name": "template-acceptance",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "catalog": "node src/cli.ts catalog --write",
+    "catalog:check": "node src/cli.ts catalog --check",
+    "acceptance": "playwright test",
+    "report": "node src/cli.ts report",
+    "review": "node src/cli.ts review"
+  },
+  "dependencies": {
+    "@playwright/test": "1.64.1",
+    "kafkajs": "2.2.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.6",
+    "@vitest/coverage-v8": "5.1.0",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.1.0"
+  }
+}

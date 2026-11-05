@@ -1,0 +1,101 @@
+# Runs the product's acceptance tests against a deployed environment.
+#
+#   repository_dispatch vrixel-acceptance   the Vrixel SDLC, once a feature's whole change set is
+#                                           deployed to dev or staging: the feature's tests, every
+#                                           test reaching a changed component (and @critical in
+#                                           staging). Posts check run "acceptance / <feature> / <stage>".
+#   schedule (nightly) / workflow_dispatch  the full regression against an environment, plus the
+#                                           review: tests covered by another, slowest tests.
+#
+# Per environment (GitHub environments "dev" and "staging"): variables ACCEPTANCE_ENV (component
+# URLs, for scheduled runs), GREETINGS_TOPIC-style topic names, ACCEPTANCE_KAFKA_BOOTSTRAP; secrets
+# ACCEPTANCE_OIDC_CLIENT_SECRET (or ACCEPTANCE_TOKEN), ACCEPTANCE_KAFKA_PASSWORD. Test identities
+# and data are synthetic; never point a run at production.
+name: acceptance
+
+on:
+  repository_dispatch:
+    types: [vrixel-acceptance]
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+    inputs:
+      stage: { description: "dev or staging", required: true, type: choice, options: [dev, staging] }
+      grep: { description: "Tests to run (a tag regex); empty runs everything", required: false }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acceptance-${{ github.event.client_payload.check || inputs.stage || 'nightly' }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: ${{ github.event.client_payload.check || format('acceptance / regression / {0}', inputs.stage || 'staging') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: ${{ github.event.client_payload.stage || inputs.stage || 'staging' }}
+    permissions:
+      contents: read
+      checks: write
+    env:
+      STAGE: ${{ github.event.client_payload.stage || inputs.stage || 'staging' }}
+      FEATURE_ID: ${{ github.event.client_payload.feature_id }}
+      CRITERIA: ${{ github.event.client_payload.criteria }}
+      CHECK_NAME: ${{ github.event.client_payload.check }}
+      HEAD_SHA: ${{ github.event.client_payload.sha || github.sha }}
+      GREP: ${{ github.event.client_payload.grep || inputs.grep }}
+      PROJECTS: ${{ github.event.client_payload.projects || 'api,ui' }}
+      VRIXEL_ENV: ${{ github.event.client_payload.env && toJSON(github.event.client_payload.env) || vars.ACCEPTANCE_ENV }}
+      ACCEPTANCE_KAFKA_BOOTSTRAP: ${{ vars.ACCEPTANCE_KAFKA_BOOTSTRAP }}
+      ACCEPTANCE_KAFKA_SASL_MECHANISM: ${{ vars.ACCEPTANCE_KAFKA_SASL_MECHANISM }}
+      ACCEPTANCE_KAFKA_USERNAME: ${{ vars.ACCEPTANCE_KAFKA_USERNAME }}
+      ACCEPTANCE_KAFKA_PASSWORD: ${{ secrets.ACCEPTANCE_KAFKA_PASSWORD }}
+      ACCEPTANCE_OIDC_TOKEN_URL: ${{ vars.ACCEPTANCE_OIDC_TOKEN_URL }}
+      ACCEPTANCE_OIDC_CLIENT_ID: ${{ vars.ACCEPTANCE_OIDC_CLIENT_ID }}
+      ACCEPTANCE_OIDC_CLIENT_SECRET: ${{ secrets.ACCEPTANCE_OIDC_CLIENT_SECRET }}
+      ACCEPTANCE_OIDC_SCOPE: ${{ vars.ACCEPTANCE_OIDC_SCOPE }}
+      ACCEPTANCE_TOKEN: ${{ secrets.ACCEPTANCE_TOKEN }}
+      GREETINGS_TOPIC: ${{ vars.GREETINGS_TOPIC }}
+      BUDGET_S: ${{ vars.ACCEPTANCE_BUDGET_S || '600' }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Browsers only when the change set has a web app.
+      - if: ${{ contains(env.PROJECTS, 'ui') }}
+        run: npx playwright install --with-deps chromium
+      - name: Run the selected tests
+        id: run
+        run: |
+          args=()
+          IFS=',' read -ra projects <<< "$PROJECTS"
+          for p in "${projects[@]}"; do args+=(--project "$p"); done
+          if [ -n "$GREP" ]; then args+=(--grep "$GREP"); fi
+          npx playwright test "${args[@]}" || echo "failed=true" >> "$GITHUB_OUTPUT"
+      - name: Report to the Vrixel SDLC
+        if: ${{ !cancelled() && env.CHECK_NAME != '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run report
+      - name: Review overlap and slow tests
+        if: ${{ !cancelled() && env.CHECK_NAME == '' }}
+        run: npm run review
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: acceptance-report
+          path: |
+            playwright-report/
+            reports/
+          retention-days: 14
+      - if: ${{ steps.run.outputs.failed == 'true' }}
+        run: exit 1
