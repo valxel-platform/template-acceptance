@@ -17,7 +17,13 @@ export default defineConfig({
     ["junit", { outputFile: "reports/acceptance-junit.xml" }],
     ["html", { open: "never" }],
   ],
-  use: { trace: "retain-on-failure" },
+  // Traces record every request with its headers, so they hold the test identity's bearer token and
+  // session cookies: never in CI, where the report is uploaded for anyone with read access. A failed
+  // UI test keeps a screenshot instead. Locally, failed tests keep their trace.
+  use: {
+    trace: process.env.CI ? "off" : "retain-on-failure",
+    screenshot: "only-on-failure",
+  },
   projects: [
     { name: "api", testIgnore: "**/*.ui.spec.ts" },
     { name: "ui", testMatch: "**/*.ui.spec.ts", use: { ...devices["Desktop Chrome"] } },
