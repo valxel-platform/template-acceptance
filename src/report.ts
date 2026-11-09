@@ -85,13 +85,23 @@ export interface Report {
   summary: string;
 }
 
-export function report(results: Results, opts: { feature: string; wanted: string[] }): Report {
+/** The journey load test's result (perf/compare.py --result), when staging ran one. */
+export interface PerformanceResult {
+  passed: boolean;
+  text: string;
+}
+
+export function report(
+  results: Results,
+  opts: { feature: string; wanted: string[]; performance?: PerformanceResult },
+): Report {
   const all = rows(results);
   const counts = { passed: 0, failed: 0, skipped: 0 };
   for (const r of all) counts[r.outcome] += 1;
   const byAc = criteria(all, opts.feature, opts.wanted);
   const seconds = Math.round((results.stats?.duration ?? all.reduce((n, r) => n + r.durationMs, 0)) / 1000);
-  const bad = Object.values(byAc).some((o) => o !== "passed") || counts.failed > 0;
+  const perf = opts.performance;
+  const bad = Object.values(byAc).some((o) => o !== "passed") || counts.failed > 0 || perf?.passed === false;
   const slowest = [...all].sort((a, b) => b.durationMs - a.durationMs).slice(0, 5);
   const lines = [
     `${counts.passed} passed, ${counts.failed} failed, ${counts.skipped} skipped`,
@@ -100,6 +110,7 @@ export function report(results: Results, opts: { feature: string; wanted: string
     ...Object.entries(byAc).map(([ac, o]) => `- ${ac}: ${o}`),
     "",
     `Duration: ${seconds}s`,
+    ...(perf ? ["", `Performance: ${perf.passed ? "passed" : "failed"} (${perf.text})`] : []),
     "",
     "Slowest:",
     ...slowest.map((r) => `- ${Math.round(r.durationMs / 1000)}s ${r.file} "${r.title}"`),

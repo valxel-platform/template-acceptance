@@ -105,3 +105,14 @@ VRIXEL_ENV='{"template-service":"http://localhost:8080"}' npx playwright test --
 
 The examples in `tests/greetings` run against the templates (template-service,
 template-event-worker, template-web). Replace them with your product's journeys.
+
+## Journey load test
+
+In staging, when the Vrixel SDLC says the change set needs a load test (a contract change, or a
+design that adds traffic), the dispatch carries `perf_settings` and the run also loads the product's
+critical journeys (`perf/journeys.js`, k6) across its components: the expected peak scaled to
+staging (`peak_rps` x `load_factor`) for three minutes after a warm-up. `perf/compare.py` judges it
+against the budget (500 ms at the 95th percentile, 1 s at the 99th, under 1% errors, unless the
+product says otherwise) and the last passing run, kept on the `perf-baselines` branch. The report
+adds `Performance: passed|failed (...)`, and a failed journey test fails the acceptance check.
+Replace the journey in `perf/journeys.js` with your product's critical ones.
