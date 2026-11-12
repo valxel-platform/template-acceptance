@@ -105,3 +105,14 @@ VRIXEL_ENV='{"template-service":"http://localhost:8080"}' npx playwright test --
 
 The examples in `tests/greetings` run against the templates (template-service,
 template-event-worker, template-web). Replace them with your product's journeys.
+
+## Screens scan (accessibility and screenshots)
+
+`.github/workflows/screens.yml` runs when the Vrixel SDLC sends `vrixel-screens` after staging is
+deployed. It opens each screen the approved UX spec names (through the BFF when the product has one),
+with the staging test identity, at 1280 and 390 pixels wide; runs axe against WCAG 2.1 AA; commits the
+screenshots to the `vrixel-screens` branch; and posts the check run `screens / <feature> / staging`.
+Serious and critical violations, and screens that don't load, fail it and block the release.
+
+Locally: `SCREENS='[{"id":"S1","route":"/checkin"}]' VRIXEL_ENV='{"web":"http://localhost:3000"}' npm run screens`
+then `npm run screens-report`.

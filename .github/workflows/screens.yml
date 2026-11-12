@@ -1,0 +1,90 @@
+# Scans the built screens in staging for the Vrixel SDLC: each screen the approved UX spec names is
+# opened with the staging test identity at desktop (1280) and phone (390) widths, checked with axe
+# against WCAG 2.1 AA, and screenshotted.
+#
+#   repository_dispatch vrixel-screens   payload {stage, sha, feature_id, flag, check, env, screens}
+#     -> screenshots committed to the branch "vrixel-screens" at <feature>/<stage>/<screen>-<width>.png
+#        (the tool reads them with its own token and shows them at G6; staging data is synthetic)
+#     -> check run "screens / <feature> / <stage>": a line per screen, a line per violation. Serious
+#        and critical violations block the release.
+name: screens
+
+on:
+  repository_dispatch:
+    types: [vrixel-screens]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: screens-${{ github.event.client_payload.check }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: ${{ github.event.client_payload.check }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.event.client_payload.stage || 'staging' }}
+    permissions:
+      contents: write # the screenshots branch
+      checks: write
+    env:
+      STAGE: ${{ github.event.client_payload.stage || 'staging' }}
+      FEATURE_ID: ${{ github.event.client_payload.feature_id }}
+      CHECK_NAME: ${{ github.event.client_payload.check }}
+      HEAD_SHA: ${{ github.event.client_payload.sha || github.sha }}
+      SCREENS: ${{ toJSON(github.event.client_payload.screens) }}
+      VRIXEL_ENV: ${{ toJSON(github.event.client_payload.env) }}
+      ACCEPTANCE_OIDC_TOKEN_URL: ${{ vars.ACCEPTANCE_OIDC_TOKEN_URL }}
+      ACCEPTANCE_OIDC_CLIENT_ID: ${{ vars.ACCEPTANCE_OIDC_CLIENT_ID }}
+      ACCEPTANCE_OIDC_CLIENT_SECRET: ${{ secrets.ACCEPTANCE_OIDC_CLIENT_SECRET }}
+      ACCEPTANCE_OIDC_SCOPE: ${{ vars.ACCEPTANCE_OIDC_SCOPE }}
+      ACCEPTANCE_TOKEN: ${{ secrets.ACCEPTANCE_TOKEN }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Visit, scan and screenshot each screen
+        run: node src/screens-run.ts
+      - name: Keep the screenshots
+        if: ${{ !cancelled() && hashFiles('reports/screens/**/*.png') != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/shots"
+          git init -q "$dir"
+          cd "$dir"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth 1 origin vrixel-screens; then git checkout -q FETCH_HEAD; else git checkout -q --orphan vrixel-screens; fi
+          rm -rf "${FEATURE_ID}/${STAGE}"
+          mkdir -p "${FEATURE_ID}/${STAGE}"
+          cp "$GITHUB_WORKSPACE/reports/screens/${FEATURE_ID}/${STAGE}/"*.png "${FEATURE_ID}/${STAGE}/"
+          git add -A
+          git -c user.name="vrixel-screens" -c user.email="vrixel-screens@users.noreply.github.com" \
+            commit -q -m "Screens: ${FEATURE_ID} ${STAGE} (${HEAD_SHA})" || exit 0
+          for i in 1 2 3; do
+            git push -q origin HEAD:vrixel-screens && exit 0
+            git fetch -q --depth 1 origin vrixel-screens && git rebase -q FETCH_HEAD || true
+          done
+          exit 1
+      - name: Report to the Vrixel SDLC
+        if: ${{ !cancelled() }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run screens-report
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: screens-report
+          path: reports/screens/
+          retention-days: 14
