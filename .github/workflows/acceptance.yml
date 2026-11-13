@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 45
     environment: ${{ github.event.client_payload.stage || inputs.stage || 'staging' }}
     permissions:
-      contents: read
+      contents: write # the perf-baselines branch (journey load test)
       checks: write
     env:
       STAGE: ${{ github.event.client_payload.stage || inputs.stage || 'staging' }}
@@ -60,6 +60,8 @@ jobs:
       GREETINGS_TOPIC: ${{ vars.GREETINGS_TOPIC }}
       BUDGET_S: ${{ vars.ACCEPTANCE_BUDGET_S || '600' }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      # The journey load test's settings (peak, staging share, budgets), when the change set needs it.
+      PERF_SETTINGS: ${{ github.event.client_payload.perf_settings && toJSON(github.event.client_payload.perf_settings) || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -81,6 +83,23 @@ jobs:
           for p in "${projects[@]}"; do args+=(--project "$p"); done
           if [ -n "$GREP" ]; then args+=(--grep "$GREP"); fi
           npx playwright test "${args[@]}" || echo "failed=true" >> "$GITHUB_OUTPUT"
+      # Staging, when the change set needs it (perf_settings in the dispatch): the critical journeys
+      # under load, at the product's peak scaled to staging, against the budget and the last pass.
+      - name: Journey load test
+        if: ${{ !cancelled() && env.STAGE == 'staging' && env.PERF_SETTINGS != '' && env.PERF_SETTINGS != 'null' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPORT_SHA: ${{ env.HEAD_SHA }}
+        run: |
+          rps=$(python3 -c 'import json,os; s=json.loads(os.environ["PERF_SETTINGS"]) or {}; print(max(1, round((s.get("peak_rps") or 50) * (s.get("load_factor") or 0.1))))')
+          budget=$(python3 -c 'import json,os; s=json.loads(os.environ["PERF_SETTINGS"]) or {}; print(json.dumps((s.get("budgets") or {}).get("api") or {}))')
+          pct=$(python3 -c 'import json,os; s=json.loads(os.environ["PERF_SETTINGS"]) or {}; print(s.get("regression_pct") or 10)')
+          mkdir -p reports out
+          docker run --rm --network host --user "$(id -u)" -v "$PWD/perf:/perf:ro" -v "$PWD/out:/out" \
+            -e VRIXEL_ENV -e ACCEPTANCE_TOKEN -e TARGET_RPS=$rps -e SUMMARY=/out/journeys.json \
+            grafana/k6:2.3.0 run --quiet /perf/journeys.js || true
+          python3 perf/compare.py --kind api --run out/journeys.json --budget "$budget" --regression "$pct" \
+            --baseline journeys.json --save-baseline journeys.json --result reports/performance.json || true
       - name: Report to the Vrixel SDLC
         if: ${{ !cancelled() && env.CHECK_NAME != '' }}
         env:
@@ -89,13 +108,29 @@ jobs:
       - name: Review overlap and slow tests
         if: ${{ !cancelled() && env.CHECK_NAME == '' }}
         run: npm run review
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      # Belt and braces: nothing that looks like a token leaves the runner, even if a test prints one.
+      - name: Check the report holds no credentials
+        id: clean
         if: ${{ !cancelled() }}
+        run: |
+          if [ -n "$(find playwright-report reports -name '*.zip' 2>/dev/null)" ]; then
+            echo "a trace is in the report; traces hold credentials and are off in CI"; exit 1
+          fi
+          for secret in "$ACCEPTANCE_TOKEN" "$ACCEPTANCE_OIDC_CLIENT_SECRET" "$ACCEPTANCE_KAFKA_PASSWORD"; do
+            if [ -n "$secret" ] && grep -rqF -- "$secret" playwright-report reports 2>/dev/null; then
+              echo "a credential is in the report"; exit 1
+            fi
+          done
+          if grep -rqE 'Bearer [A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}' playwright-report reports 2>/dev/null; then
+            echo "a bearer token is in the report"; exit 1
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.clean.outcome == 'success' }}
         with:
           name: acceptance-report
           path: |
             playwright-report/
             reports/
-          retention-days: 14
+          retention-days: 7
       - if: ${{ steps.run.outputs.failed == 'true' }}
         run: exit 1

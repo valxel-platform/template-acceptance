@@ -74,4 +74,22 @@ describe("report", () => {
     const missing = report({ suites: [] }, { feature: "EMR-FEAT-12", wanted: ["AC-1"] });
     expect(missing.conclusion).toBe("failure");
   });
+
+  it("carries the journey load test, and fails the run when it failed", () => {
+    const one = { suites: [{ specs: results.suites?.[0]?.specs?.slice(0, 1) ?? [] }] };
+    const fast = report(one, {
+      feature: "EMR-FEAT-12",
+      wanted: ["AC-1"],
+      performance: { passed: true, text: "p95 120 ms (budget 500 ms)" },
+    });
+    expect(fast.conclusion).toBe("success");
+    expect(fast.summary).toContain("Performance: passed (p95 120 ms (budget 500 ms))");
+    const slow = report(one, {
+      feature: "EMR-FEAT-12",
+      wanted: ["AC-1"],
+      performance: { passed: false, text: "p95_ms 900 ms is over the budget of 500 ms" },
+    });
+    expect(slow.conclusion).toBe("failure");
+    expect(slow.summary).toContain("Performance: failed (p95_ms 900 ms is over the budget of 500 ms)");
+  });
 });

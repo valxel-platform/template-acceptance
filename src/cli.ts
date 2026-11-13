@@ -46,7 +46,11 @@ async function main(): Promise<number> {
   if (cmd === "report") {
     const feature = process.env.FEATURE_ID ?? "";
     const wanted = (process.env.CRITERIA ?? "").split(",").filter(Boolean);
-    const r = report(results, { feature, wanted });
+    // The journey load test's result, when staging ran one (perf/compare.py --result).
+    const performance = existsSync("reports/performance.json")
+      ? (JSON.parse(readFileSync("reports/performance.json", "utf8")) as { passed: boolean; text: string })
+      : undefined;
+    const r = report(results, { feature, wanted, performance });
     summary(`## ${process.env.CHECK_NAME ?? "acceptance"}\n\n${r.summary}`);
     const repo = process.env.GITHUB_REPOSITORY;
     const sha = process.env.HEAD_SHA;
