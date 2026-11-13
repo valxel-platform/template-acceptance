@@ -11,7 +11,7 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts"],
       // Thin glue around Playwright, Kafka and the GitHub API; exercised by acceptance runs.
-      exclude: ["src/**/*.test.ts", "src/fixtures.ts", "src/kafka.ts", "src/cli.ts"],
+      exclude: ["src/**/*.test.ts", "src/fixtures.ts", "src/kafka.ts", "src/cli.ts", "src/screens-run.ts"],
       reporter: ["text", "json-summary"],
       reportsDirectory: "coverage",
       thresholds: { lines: 90, functions: 90, branches: 85, statements: 90 },

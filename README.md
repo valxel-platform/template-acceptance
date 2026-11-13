@@ -106,13 +106,13 @@ VRIXEL_ENV='{"template-service":"http://localhost:8080"}' npx playwright test --
 The examples in `tests/greetings` run against the templates (template-service,
 template-event-worker, template-web). Replace them with your product's journeys.
 
-## Journey load test
+## Screens scan (accessibility and screenshots)
 
-In staging, when the Vrixel SDLC says the change set needs a load test (a contract change, or a
-design that adds traffic), the dispatch carries `perf_settings` and the run also loads the product's
-critical journeys (`perf/journeys.js`, k6) across its components: the expected peak scaled to
-staging (`peak_rps` x `load_factor`) for three minutes after a warm-up. `perf/compare.py` judges it
-against the budget (500 ms at the 95th percentile, 1 s at the 99th, under 1% errors, unless the
-product says otherwise) and the last passing run, kept on the `perf-baselines` branch. The report
-adds `Performance: passed|failed (...)`, and a failed journey test fails the acceptance check.
-Replace the journey in `perf/journeys.js` with your product's critical ones.
+`.github/workflows/screens.yml` runs when the Vrixel SDLC sends `vrixel-screens` after staging is
+deployed. It opens each screen the approved UX spec names (through the BFF when the product has one),
+with the staging test identity, at 1280 and 390 pixels wide; runs axe against WCAG 2.1 AA; commits the
+screenshots to the `vrixel-screens` branch; and posts the check run `screens / <feature> / staging`.
+Serious and critical violations, and screens that don't load, fail it and block the release.
+
+Locally: `SCREENS='[{"id":"S1","route":"/checkin"}]' VRIXEL_ENV='{"web":"http://localhost:3000"}' npm run screens`
+then `npm run screens-report`.
