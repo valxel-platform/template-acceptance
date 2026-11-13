@@ -1,6 +1,6 @@
 # Runs the product's acceptance tests against a deployed environment.
 #
-#   repository_dispatch vrixel-acceptance   the Vrixel SDLC, once a feature's whole change set is
+#   repository_dispatch valxel-acceptance   the Valxel SDLC, once a feature's whole change set is
 #                                           deployed to dev or staging: the feature's tests, every
 #                                           test reaching a changed component (and @critical in
 #                                           staging). Posts check run "acceptance / <feature> / <stage>".
@@ -15,7 +15,7 @@ name: acceptance
 
 on:
   repository_dispatch:
-    types: [vrixel-acceptance]
+    types: [valxel-acceptance]
   schedule:
     - cron: "23 6 * * *"
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
       HEAD_SHA: ${{ github.event.client_payload.sha || github.sha }}
       GREP: ${{ github.event.client_payload.grep || inputs.grep }}
       PROJECTS: ${{ github.event.client_payload.projects || 'api,ui' }}
-      VRIXEL_ENV: ${{ github.event.client_payload.env && toJSON(github.event.client_payload.env) || vars.ACCEPTANCE_ENV }}
+      VALXEL_ENV: ${{ github.event.client_payload.env && toJSON(github.event.client_payload.env) || vars.ACCEPTANCE_ENV }}
       ACCEPTANCE_KAFKA_BOOTSTRAP: ${{ vars.ACCEPTANCE_KAFKA_BOOTSTRAP }}
       ACCEPTANCE_KAFKA_SASL_MECHANISM: ${{ vars.ACCEPTANCE_KAFKA_SASL_MECHANISM }}
       ACCEPTANCE_KAFKA_USERNAME: ${{ vars.ACCEPTANCE_KAFKA_USERNAME }}
@@ -96,11 +96,11 @@ jobs:
           pct=$(python3 -c 'import json,os; s=json.loads(os.environ["PERF_SETTINGS"]) or {}; print(s.get("regression_pct") or 10)')
           mkdir -p reports out
           docker run --rm --network host --user "$(id -u)" -v "$PWD/perf:/perf:ro" -v "$PWD/out:/out" \
-            -e VRIXEL_ENV -e ACCEPTANCE_TOKEN -e TARGET_RPS=$rps -e SUMMARY=/out/journeys.json \
+            -e VALXEL_ENV -e ACCEPTANCE_TOKEN -e TARGET_RPS=$rps -e SUMMARY=/out/journeys.json \
             grafana/k6:2.3.0 run --quiet /perf/journeys.js || true
           python3 perf/compare.py --kind api --run out/journeys.json --budget "$budget" --regression "$pct" \
             --baseline journeys.json --save-baseline journeys.json --result reports/performance.json || true
-      - name: Report to the Vrixel SDLC
+      - name: Report to the Valxel SDLC
         if: ${{ !cancelled() && env.CHECK_NAME != '' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}

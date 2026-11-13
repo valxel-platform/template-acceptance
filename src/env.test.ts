@@ -7,7 +7,7 @@ describe("env", () => {
     const all = components('{"svc": "https://svc.dev", "web": "", "n": 1}');
     expect(all).toEqual({ svc: "https://svc.dev" });
     expect(urlOf("svc", all)).toBe("https://svc.dev");
-    expect(() => urlOf("web", all)).toThrow("web is not deployed in this environment (VRIXEL_ENV has: svc)");
+    expect(() => urlOf("web", all)).toThrow("web is not deployed in this environment (VALXEL_ENV has: svc)");
     expect(components(undefined)).toEqual({});
     expect(() => components("[1]")).toThrow("JSON object");
   });

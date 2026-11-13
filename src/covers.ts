@@ -3,10 +3,10 @@
  *
  * A cover is one of:
  *   <component> <METHOD> <path> [<status>]   e.g. "emr-intake-api PUT /api/v1/consents/{id} 202"
- *   event <type>                  e.g. "event vrixel.consent.recorded.v1"
+ *   event <type>                  e.g. "event valxel.consent.recorded.v1"
  *   page <component> <path>       e.g. "page emr-web /consents"
  *
- * `spec()` turns a declaration into Playwright tags and annotations. The Vrixel SDLC selects tests
+ * `spec()` turns a declaration into Playwright tags and annotations. The Valxel SDLC selects tests
  * by tag (feature, components, @critical) and finds overlap from the covers, so keep both true:
  * the api and events fixtures fail a test that reaches something it doesn't declare. A status in
  * a cover tells apart tests of the same route (the happy path and a refusal); without one, any

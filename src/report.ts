@@ -1,5 +1,5 @@
 /**
- * The acceptance run's report, as the Vrixel SDLC reads it: one check run named
+ * The acceptance run's report, as the Valxel SDLC reads it: one check run named
  * `acceptance / <feature> / <stage>` whose summary has counts, a line per criterion and the
  * duration. A criterion fails if any test tagged with it failed.
  */

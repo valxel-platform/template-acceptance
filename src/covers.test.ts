@@ -8,7 +8,7 @@ describe("spec", () => {
       capability: "Consent capture",
       covers: [
         "emr-intake-api put /api/v1/consents/{id} 202",
-        "event vrixel.consent.recorded.v1",
+        "event valxel.consent.recorded.v1",
         "page emr-web /consents",
       ],
       critical: true,
@@ -60,22 +60,22 @@ describe("covers", () => {
   });
 
   it("finds what a test reached but didn't declare", () => {
-    const declared = ["svc PUT /c/{id} 202", "svc GET /c", "event vrixel.c.saved.v1"];
+    const declared = ["svc PUT /c/{id} 202", "svc GET /c", "event valxel.c.saved.v1"];
     expect(
       undeclared(declared, [
         "svc PUT /c/1 202",
         "svc GET /c 200",
         "svc GET /c 404",
-        "event vrixel.c.saved.v1",
+        "event valxel.c.saved.v1",
       ]),
     ).toEqual([]);
     expect(
       undeclared(declared, [
         "svc PUT /c/1 400",
         "other GET /c 200",
-        "event vrixel.c.gone.v1",
+        "event valxel.c.gone.v1",
         "svc DELETE /c/1 204",
       ]),
-    ).toEqual(["svc PUT /c/1 400", "other GET /c 200", "event vrixel.c.gone.v1", "svc DELETE /c/1 204"]);
+    ).toEqual(["svc PUT /c/1 400", "other GET /c 200", "event valxel.c.gone.v1", "svc DELETE /c/1 204"]);
   });
 });

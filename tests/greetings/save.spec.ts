@@ -9,7 +9,7 @@ test(
   spec({
     proves: { "TPL-FEAT-2": ["AC-1", "AC-2"] },
     capability: "greetings",
-    covers: ["template-service PUT /api/v1/greetings/{id} 202", "event vrixel.greeting.saved.v1"],
+    covers: ["template-service PUT /api/v1/greetings/{id} 202", "event valxel.greeting.saved.v1"],
   }),
   async ({ api, events, runId }) => {
     const service = await api("template-service");
@@ -29,7 +29,7 @@ test(
     expect(((await retry.json()) as { eventId: string }).eventId).toBe(eventId);
 
     const event = await watch.next((e) => e.subject === `greeting/${id}`);
-    expect(event.type).toBe("vrixel.greeting.saved.v1");
+    expect(event.type).toBe("valxel.greeting.saved.v1");
     expect(event.id).toBe(eventId);
     expect(event.data).toMatchObject({ id, message: "Welcome back" });
   },

@@ -63,7 +63,7 @@
       "capability": "greetings",
       "covers": [
         "template-service PUT /api/v1/greetings/{id} 202",
-        "event vrixel.greeting.saved.v1"
+        "event valxel.greeting.saved.v1"
       ]
     }
   ]

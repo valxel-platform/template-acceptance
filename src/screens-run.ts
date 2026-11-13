@@ -1,5 +1,5 @@
 /**
- * node src/screens-run.ts   open each screen in SCREENS (JSON) against VRIXEL_ENV, run axe (WCAG 2.1 AA)
+ * node src/screens-run.ts   open each screen in SCREENS (JSON) against VALXEL_ENV, run axe (WCAG 2.1 AA)
  * at desktop and phone widths, save screenshots under reports/screens/<feature>/<stage>/, and write
  * reports/screens/visits.json. Signs in with the test identity's token, when there is one.
  */
