@@ -1,10 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Product acceptance tests: a feature end to end across the repos it changes. The Vrixel SDLC runs
+// Product acceptance tests: a feature end to end across the repos it changes. The Valxel SDLC runs
 // them after the whole change set is deployed (see .github/workflows/acceptance.yml):
 //   api  every test except *.ui.spec.ts: through the components' APIs and events, no browser
 //   ui   *.ui.spec.ts: browser journeys, only when the change set has a web app
-// VRIXEL_ENV holds each component's URL: {"emr-intake-api": "https://...", "emr-web": "https://..."}.
+// VALXEL_ENV holds each component's URL: {"emr-intake-api": "https://...", "emr-web": "https://..."}.
 export default defineConfig({
   testDir: "tests",
   fullyParallel: true,

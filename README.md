@@ -4,7 +4,7 @@ A product's end-to-end tests across repos. Each repo tests itself; this repo tes
 the web app, the services, Kafka and the event workers together, in a deployed environment. One
 acceptance repo per product (role `acceptance` in its `product.yaml`).
 
-The Vrixel SDLC runs it after a feature's whole change set is deployed to dev, then staging, and
+The Valxel SDLC runs it after a feature's whole change set is deployed to dev, then staging, and
 reads the result per acceptance criterion. A criterion without a passing test stops the feature
 before G6.
 
@@ -36,7 +36,7 @@ test(
     capability: "consent",
     covers: [
       "emr-intake-api PUT /api/v1/consents/{id} 202",
-      "event vrixel.consent.recorded.v1",
+      "event valxel.consent.recorded.v1",
       "emr-chart-api GET /api/v1/patients/{id}/consents 200",
     ],
   }),
@@ -67,7 +67,7 @@ so declare routes a browser journey exercises too.
 ## Extending instead of adding
 
 `catalog.json` lists every test with its tags, capability and covers (`npm run catalog`; CI checks
-it is current). The Vrixel SDLC gives it to the planner, and the plan says per criterion:
+it is current). The Valxel SDLC gives it to the planner, and the plan says per criterion:
 
 ```
 - AC-2: extend consents/capture.spec.ts "records consent"
@@ -83,7 +83,7 @@ covers and the slowest tests, to merge or trim them.
 
 `.github/workflows/acceptance.yml`:
 
-- **Per feature** (`repository_dispatch: vrixel-acceptance`): every component's URL (`VRIXEL_ENV`),
+- **Per feature** (`repository_dispatch: valxel-acceptance`): every component's URL (`VALXEL_ENV`),
   the selected tags and projects, the feature's criteria. Posts the check run
   `acceptance / <feature> / <stage>` with a line per criterion and the duration.
 - **Nightly** (and by hand): the full regression against staging, plus the review.
@@ -100,7 +100,7 @@ for the test identity (or a secret `ACCEPTANCE_TOKEN`), topic variables your tes
 npm ci
 npm test                     # the fixtures' own tests
 npm run catalog              # after adding or changing tests
-VRIXEL_ENV='{"template-service":"http://localhost:8080"}' npx playwright test --project api
+VALXEL_ENV='{"template-service":"http://localhost:8080"}' npx playwright test --project api
 ```
 
 The examples in `tests/greetings` run against the templates (template-service,
@@ -108,11 +108,11 @@ template-event-worker, template-web). Replace them with your product's journeys.
 
 ## Screens scan (accessibility and screenshots)
 
-`.github/workflows/screens.yml` runs when the Vrixel SDLC sends `vrixel-screens` after staging is
+`.github/workflows/screens.yml` runs when the Valxel SDLC sends `valxel-screens` after staging is
 deployed. It opens each screen the approved UX spec names (through the BFF when the product has one),
 with the staging test identity, at 1280 and 390 pixels wide; runs axe against WCAG 2.1 AA; commits the
-screenshots to the `vrixel-screens` branch; and posts the check run `screens / <feature> / staging`.
+screenshots to the `valxel-screens` branch; and posts the check run `screens / <feature> / staging`.
 Serious and critical violations, and screens that don't load, fail it and block the release.
 
-Locally: `SCREENS='[{"id":"S1","route":"/checkin"}]' VRIXEL_ENV='{"web":"http://localhost:3000"}' npm run screens`
+Locally: `SCREENS='[{"id":"S1","route":"/checkin"}]' VALXEL_ENV='{"web":"http://localhost:3000"}' npm run screens`
 then `npm run screens-report`.

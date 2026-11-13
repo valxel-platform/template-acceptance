@@ -1,9 +1,9 @@
-# Scans the built screens in staging for the Vrixel SDLC: each screen the approved UX spec names is
+# Scans the built screens in staging for the Valxel SDLC: each screen the approved UX spec names is
 # opened with the staging test identity at desktop (1280) and phone (390) widths, checked with axe
 # against WCAG 2.1 AA, and screenshotted.
 #
-#   repository_dispatch vrixel-screens   payload {stage, sha, feature_id, flag, check, env, screens}
-#     -> screenshots committed to the branch "vrixel-screens" at <feature>/<stage>/<screen>-<width>.png
+#   repository_dispatch valxel-screens   payload {stage, sha, feature_id, flag, check, env, screens}
+#     -> screenshots committed to the branch "valxel-screens" at <feature>/<stage>/<screen>-<width>.png
 #        (the tool reads them with its own token and shows them at G6; staging data is synthetic)
 #     -> check run "screens / <feature> / <stage>": a line per screen, a line per violation. Serious
 #        and critical violations block the release.
@@ -11,7 +11,7 @@ name: screens
 
 on:
   repository_dispatch:
-    types: [vrixel-screens]
+    types: [valxel-screens]
 
 permissions:
   contents: read
@@ -35,7 +35,7 @@ jobs:
       CHECK_NAME: ${{ github.event.client_payload.check }}
       HEAD_SHA: ${{ github.event.client_payload.sha || github.sha }}
       SCREENS: ${{ toJSON(github.event.client_payload.screens) }}
-      VRIXEL_ENV: ${{ toJSON(github.event.client_payload.env) }}
+      VALXEL_ENV: ${{ toJSON(github.event.client_payload.env) }}
       ACCEPTANCE_OIDC_TOKEN_URL: ${{ vars.ACCEPTANCE_OIDC_TOKEN_URL }}
       ACCEPTANCE_OIDC_CLIENT_ID: ${{ vars.ACCEPTANCE_OIDC_CLIENT_ID }}
       ACCEPTANCE_OIDC_CLIENT_SECRET: ${{ secrets.ACCEPTANCE_OIDC_CLIENT_SECRET }}
@@ -65,19 +65,19 @@ jobs:
           git init -q "$dir"
           cd "$dir"
           git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          if git fetch -q --depth 1 origin vrixel-screens; then git checkout -q FETCH_HEAD; else git checkout -q --orphan vrixel-screens; fi
+          if git fetch -q --depth 1 origin valxel-screens; then git checkout -q FETCH_HEAD; else git checkout -q --orphan valxel-screens; fi
           rm -rf "${FEATURE_ID}/${STAGE}"
           mkdir -p "${FEATURE_ID}/${STAGE}"
           cp "$GITHUB_WORKSPACE/reports/screens/${FEATURE_ID}/${STAGE}/"*.png "${FEATURE_ID}/${STAGE}/"
           git add -A
-          git -c user.name="vrixel-screens" -c user.email="vrixel-screens@users.noreply.github.com" \
+          git -c user.name="valxel-screens" -c user.email="valxel-screens@users.noreply.github.com" \
             commit -q -m "Screens: ${FEATURE_ID} ${STAGE} (${HEAD_SHA})" || exit 0
           for i in 1 2 3; do
-            git push -q origin HEAD:vrixel-screens && exit 0
-            git fetch -q --depth 1 origin vrixel-screens && git rebase -q FETCH_HEAD || true
+            git push -q origin HEAD:valxel-screens && exit 0
+            git fetch -q --depth 1 origin valxel-screens && git rebase -q FETCH_HEAD || true
           done
           exit 1
-      - name: Report to the Vrixel SDLC
+      - name: Report to the Valxel SDLC
         if: ${{ !cancelled() }}
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -1,6 +1,6 @@
 /**
  * node src/cli.ts catalog --write | --check
- * node src/cli.ts report     after a run: post the check run the Vrixel SDLC reads
+ * node src/cli.ts report     after a run: post the check run the Valxel SDLC reads
  * node src/cli.ts review     after the nightly full run: overlaps and slow tests, to the job summary
  */
 import { execFileSync } from "node:child_process";
@@ -91,7 +91,7 @@ async function main(): Promise<number> {
 
 process.exitCode = await main();
 
-/** After a screens scan: post the check run the Vrixel SDLC reads (`screens / <feature> / <stage>`). */
+/** After a screens scan: post the check run the Valxel SDLC reads (`screens / <feature> / <stage>`). */
 async function screensReport(): Promise<number> {
   // No visits file means the scan itself broke before visiting anything: report that as a failure.
   const visits: Visit[] = existsSync("reports/screens/visits.json")

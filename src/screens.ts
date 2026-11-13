@@ -1,5 +1,5 @@
 /**
- * The built screens, scanned for the Vrixel SDLC (see .github/workflows/screens.yml): each screen the
+ * The built screens, scanned for the Valxel SDLC (see .github/workflows/screens.yml): each screen the
  * approved UX spec names is opened at desktop and phone widths, checked with axe against WCAG 2.1 AA,
  * and screenshotted. The check run `screens / <feature> / <stage>` carries one line per screen and
  * one per violation; serious and critical violations block the release in the tool.
@@ -39,7 +39,7 @@ export function baseFor(screen: Screen, env: Record<string, string>): string {
   const app = (screen.app ?? "").split("/").pop() ?? "";
   const url = pick(/(^|-)bff$/) ?? (app ? env[app] : undefined) ?? pick(/(^|-)web$/);
   if (url) return url;
-  throw new Error(`no URL for ${screen.id}: VRIXEL_ENV has ${Object.keys(env).join(", ") || "nothing"}`);
+  throw new Error(`no URL for ${screen.id}: VALXEL_ENV has ${Object.keys(env).join(", ") || "nothing"}`);
 }
 
 export function join(base: string, route: string): string {

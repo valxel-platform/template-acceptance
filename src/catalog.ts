@@ -1,6 +1,6 @@
 /**
  * catalog.json: every acceptance test with its file, title, tags, capability and covers, so the
- * Vrixel SDLC can plan new tests against what exists. Built from `playwright test --list
+ * Valxel SDLC can plan new tests against what exists. Built from `playwright test --list
  * --reporter=json`; `npm run catalog` writes it, CI checks it is current and complete.
  */
 

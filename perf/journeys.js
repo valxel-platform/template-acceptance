@@ -1,4 +1,4 @@
-// Journey load test (k6), in staging, when the Vrixel SDLC says the change set needs one: the
+// Journey load test (k6), in staging, when the Valxel SDLC says the change set needs one: the
 // product's critical journeys across its components, at the expected peak scaled to staging
 // (TARGET_RPS), for three minutes after a warm-up. perf/compare.py judges it against the budget and
 // the last passing run; the acceptance report carries the result. Replace the journey below with
@@ -6,7 +6,7 @@
 import http from "k6/http";
 import { check, group } from "k6";
 
-const ENV = JSON.parse(__ENV.VRIXEL_ENV || "{}");
+const ENV = JSON.parse(__ENV.VALXEL_ENV || "{}");
 const RATE = Math.max(1, Math.round(Number(__ENV.TARGET_RPS || 5)));
 const headers = __ENV.ACCEPTANCE_TOKEN ? { Authorization: `Bearer ${__ENV.ACCEPTANCE_TOKEN}` } : {};
 

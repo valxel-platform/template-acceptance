@@ -1,16 +1,16 @@
 /**
  * Where the run points, from the environment the acceptance workflow sets:
- *   VRIXEL_ENV                    {"<component>": "<base url>"} for every deployed component
+ *   VALXEL_ENV                    {"<component>": "<base url>"} for every deployed component
  *   ACCEPTANCE_TOKEN              a bearer token for the test identity, or
  *   ACCEPTANCE_OIDC_TOKEN_URL     client credentials: _CLIENT_ID, _CLIENT_SECRET, _SCOPE
  *   ACCEPTANCE_KAFKA_BOOTSTRAP    the environment's Kafka (+ _SASL_MECHANISM, _USERNAME, _PASSWORD)
  */
 
-export function components(raw = process.env.VRIXEL_ENV): Record<string, string> {
+export function components(raw = process.env.VALXEL_ENV): Record<string, string> {
   if (!raw) return {};
   const parsed: unknown = JSON.parse(raw);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error('VRIXEL_ENV must be a JSON object: {"<component>": "<url>"}');
+    throw new Error('VALXEL_ENV must be a JSON object: {"<component>": "<url>"}');
   }
   return Object.fromEntries(
     Object.entries(parsed as Record<string, unknown>).filter(
@@ -23,7 +23,7 @@ export function urlOf(component: string, all = components()): string {
   const url = all[component];
   if (!url) {
     const known = Object.keys(all).join(", ") || "none";
-    throw new Error(`${component} is not deployed in this environment (VRIXEL_ENV has: ${known})`);
+    throw new Error(`${component} is not deployed in this environment (VALXEL_ENV has: ${known})`);
   }
   return url;
 }
