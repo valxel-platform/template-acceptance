@@ -7,6 +7,10 @@
 #        (the tool reads them with its own token and shows them at G6; staging data is synthetic)
 #     -> check run "screens / <feature> / <stage>": a line per screen, a line per violation. Serious
 #        and critical violations block the release.
+#
+#   stage "today": the same visit before the feature is built, in staging, so the G3 prototype is
+#   drawn on the app as it is today (a route that doesn't load yet is a screen the feature adds).
+#   Its violations are the app's as it is: the tool doesn't count them against the feature.
 name: screens
 
 on:
@@ -25,7 +29,7 @@ jobs:
     name: ${{ github.event.client_payload.check }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ github.event.client_payload.stage || 'staging' }}
+    environment: ${{ github.event.client_payload.stage == 'today' && 'staging' || github.event.client_payload.stage || 'staging' }}
     permissions:
       contents: write # the screenshots branch
       checks: write
